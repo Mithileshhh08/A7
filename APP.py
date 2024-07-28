@@ -1,64 +1,40 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
 
-# Initialize an empty DataFrame or load existing data
-try:
-    expenses = pd.read_csv('expenses.csv')
-except FileNotFoundError:
-    expenses = pd.DataFrame(columns=['Date', 'Category', 'Amount'])
+# Title and description
+st.title("BMI Calculator")
+st.write("Enter your height and weight to calculate your BMI.")
 
-# Function to add a new expense
-def add_expense(date, category, amount):
-    new_expense = pd.DataFrame({'Date': [date], 'Category': [category], 'Amount': [amount]})
-    return expenses.append(new_expense, ignore_index=True)
+# Input fields for height and weight
+height = st.number_input("Height (cm)", min_value=0.0, format="%.2f")
+weight = st.number_input("Weight (kg)", min_value=0.0, format="%.2f")
 
-# Streamlit app layout
-st.title('Expense Tracker')
+# Calculate BMI
+if height > 0 and weight > 0:
+    bmi = weight / ((height / 100) ** 2)
+    st.write(f"Your BMI is: {bmi:.2f}")
 
-st.header('Add a new expense')
-with st.form(key='expense_form'):
-    date = st.date_input('Date')
-    category = st.selectbox('Category', ['Food', 'Transport', 'Bills', 'Entertainment', 'Other'])
-    amount = st.number_input('Amount', min_value=0.0, format="%.2f")
-    submit_button = st.form_submit_button(label='Add Expense')
+    # Categorize BMI
+    if bmi < 18.5:
+        st.write("Category: Underweight")
+    elif 18.5 <= bmi < 24.9:
+        st.write("Category: Normal weight")
+    elif 25 <= bmi < 29.9:
+        st.write("Category: Overweight")
+    else:
+        st.write("Category: Obesity")
 
-if submit_button:
-    expenses = add_expense(date, category, amount)
-    expenses.to_csv('expenses.csv', index=False)
-    st.success('Expense added successfully!')
+    # Visualization
+    import matplotlib.pyplot as plt
 
-# Display expenses
-st.header('Expenses')
-st.write(expenses)
+    categories = ["Underweight", "Normal weight", "Overweight", "Obesity"]
+    values = [18.5, 24.9, 29.9, bmi] if bmi > 29.9 else [bmi, 18.5, 24.9, 29.9]
 
-# Visualizations
-st.header('Visualizations')
+    fig, ax = plt.subplots()
+    ax.barh(categories, values, color=['blue', 'green', 'orange', 'red'])
+    ax.axvline(x=bmi, color='black', linestyle='--')
+    plt.xlabel('BMI Value')
+    plt.title('BMI Categories')
 
-# Pie chart for expense distribution by category
-fig1, ax1 = plt.subplots()
-category_distribution = expenses.groupby('Category')['Amount'].sum()
-ax1.pie(category_distribution, labels=category_distribution.index, autopct='%1.1f%%')
-ax1.set_title('Expenses by Category')
-st.pyplot(fig1)
-
-# Bar chart for expenses over time
-fig2, ax2 = plt.subplots()
-expenses['Date'] = pd.to_datetime(expenses['Date'])
-expenses_by_date = expenses.groupby('Date')['Amount'].sum()
-ax2.bar(expenses_by_date.index, expenses_by_date)
-ax2.set_title('Expenses Over Time')
-ax2.set_xlabel('Date')
-ax2.set_ylabel('Amount')
-st.pyplot(fig2)
-
-# Line chart for monthly expenses
-fig3, ax3 = plt.subplots()
-expenses['Month'] = expenses['Date'].dt.to_period('M')
-monthly_expenses = expenses.groupby('Month')['Amount'].sum()
-ax3.plot(monthly_expenses.index.astype(str), monthly_expenses)
-ax3.set_title('Monthly Expenses')
-ax3.set_xlabel('Month')
-ax3.set_ylabel('Amount')
-st.pyplot(fig3)
-
+    st.pyplot(fig)
+else:
+    st.write("Please enter valid height and weight.")
